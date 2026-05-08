@@ -2,9 +2,7 @@
 
 use App\Http\Controllers\AuthFlowController;
 use App\Http\Controllers\UserController;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,21 +27,6 @@ Route::get('/prueba-s3', function () {
     abort_unless($uploaded, 500, 'No se pudo subir el archivo de prueba.');
 
     return 'Archivo subido correctamente';
-});
-
-Route::get('/crear-admin-temporal', function () {
-    abort_unless(app()->environment(['local', 'production']), 404);
-
-    User::updateOrCreate(
-        ['email' => 'josueagueda360@gmail.com'],
-        [
-            'name' => 'Josue Agueda',
-            'password' => Hash::make('Agueda36@'),
-            'role' => 'administrador',
-        ]
-    );
-
-    return 'Admin creado';
 });
 
 Route::middleware('guest')->group(function () {
