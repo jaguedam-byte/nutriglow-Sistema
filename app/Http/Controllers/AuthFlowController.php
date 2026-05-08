@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 use Throwable;
 
@@ -1619,7 +1620,23 @@ class AuthFlowController extends Controller
 
         $request->session()->put('pending_admin_login_user_id', $user->id);
 
-        Mail::to($user->email)->send(new AdminLoginCodeMail($user, $code));
+        try {
+            Mail::to($user->email)->send(new AdminLoginCodeMail($user, $code));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            DB::table('admin_login_verification_codes')
+                ->where('user_id', $user->id)
+                ->delete();
+
+            $this->clearPendingAdminLogin($request);
+            $this->logAdminAudit('admin_login_code_failed', $request, $user, 'user', $user->id);
+
+            throw ValidationException::withMessages([
+                'email' => 'No se pudo enviar el codigo de seguridad. Revisa la configuracion SMTP e intenta de nuevo.',
+            ]);
+        }
+
         $this->logAdminAudit('admin_login_code_sent', $request, $user, 'user', $user->id);
     }
 
